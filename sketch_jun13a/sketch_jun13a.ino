@@ -1,11 +1,15 @@
-int s; //Integer variable to store train's speed in the range from 0 to 255.
-
-#define A 8 //'A' and 'B' are direction control pins connected to the motor driver.
+#define A 8 // Pinouts for motor driver digital direction control.
 #define B 9
-#define PWM 7 //Motor speed control pin connected to the 'EN' pin of the motor driver.
-#define Sensor 2 //Sensor
+#define PWM 7 // Pinout for motor driver analog speed control.
+#define Sensor 2 // Pinout for sensor signal.
+#define Pwr 25 // "Pinout" for onboard LED.
+
 int moving;
+int direction;
 int tramStop;
+// User definable variables
+int maxSpeed = 150;
+int embarkTime = 7500;
 
 void setup() {
   // put your setup code here, to run once:
@@ -13,10 +17,11 @@ void setup() {
   pinMode(B, OUTPUT);
   pinMode(Sensor, INPUT);
 
-  pinMode(25, OUTPUT);//Added for Pico, sice it has no onboard POWER LED.
-  digitalWrite(25, HIGH);//Using the LED on pin GP25 as a power indicator.
+  pinMode(Pwr, OUTPUT); // Pico onboard LED.
+  digitalWrite(25, HIGH); // On for a power indicator.
 
-  delay(200);
+  delay(2000); // 2 Seconds before doing anything.
+  analogWrite(PWM, 010); // Illuminate train lights.
 }
 
 void loop() {
@@ -35,16 +40,16 @@ void loop() {
   }
 
   if (readSensor == LOW && moving == 0){
-    if (millis() - tramStop >= 10000){
-      analogWrite(PWM, 050);
+    if (millis() - tramStop >= embarkTime){
+      analogWrite(PWM, (0.33 * maxSpeed));
       delay(2000);
-      analogWrite(PWM, 075);
+      analogWrite(PWM, (0.66 * maxSpeed));
     }
   }
 
   if (readSensor == HIGH && moving == 0){ // HIGH when not detecting
-    if (millis() - tramStop >= 9000){
-      analogWrite(PWM, 150);
+    if (millis() - tramStop >= (embarkTime + 3500)){
+      analogWrite(PWM, maxSpeed);
       moving = 1;
       tramStop = 0;
     }
