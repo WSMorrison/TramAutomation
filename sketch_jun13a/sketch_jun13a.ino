@@ -1,75 +1,79 @@
-#define A 8 // Pinouts for motor driver digital direction control.
+#define A 8 // Digital pins for motor driver direction.
 #define B 9
-#define PWM 7 // Pinout for motor driver analog speed control.
-#define Sensor 2 // Pinout for sensor signal.
-#define Pwr 25 // "Pinout" for onboard LED.
+#define PWM 7 // Analog pinout for motor driver speed.
+#define Sensor 2 // Sensor.
 
 int moving;
-int direction;
-int tramStop;
+int direction = 1;
+int scheduledStop;
 // User definable variables
 int maxSpeed = 150;
 int embarkTime = 7500;
 
 void setup() {
-  // put your setup code here, to run once:
   pinMode(A, OUTPUT);
   pinMode(B, OUTPUT);
   pinMode(Sensor, INPUT);
 
-  pinMode(Pwr, OUTPUT); // Pico onboard LED.
-  digitalWrite(25, HIGH); // On for a power indicator.
+  pinMode(25, OUTPUT);//Added for Pico, sice it has no onboard POWER LED.
+  digitalWrite(25, HIGH);//Using the LED on pin GP25 as a power indicator.
 
-  delay(2000); // 2 Seconds before doing anything.
-  analogWrite(PWM, 010); // Illuminate train lights.
+  delay(200);
+}
+
+void trainStart(){
+  analogWrite(PWM, (0.33 * maxSpeed));
+  delay(2000);
+  analogWrite(PWM, (0.66 * maxSpeed));
+}
+
+void trainMax(){
+  analogWrite(PWM, maxSpeed);
+  moving = 1;
+  scheduledStop = 0;
+}
+
+void trainStop(){
+  analogWrite(PWM, 75);
+  delay(1000);
+  analogWrite(PWM, 010);
+}
+
+int toggleDirection(int direction){
+  if (direction == 1){
+    digitalWrite(A, LOW);
+    digitalWrite(B, HIGH);
+    direction = 0;
+  } else if (direction == 0){
+    digitalWrite(A, HIGH);
+    digitalWrite(B,LOW);
+    direction = 1;
+  } else {
+    exit(0);
+  }
+  return direction;
 }
 
 void loop() {
-  
-  digitalWrite(A, HIGH);
-  digitalWrite(B, LOW);
 
   int readSensor = digitalRead(Sensor);
 
   if (readSensor == LOW && moving == 1){ // LOW when detecting 
     moving = 0;
-    analogWrite(PWM, 75);
-    delay(1000);
-    analogWrite(PWM, 010);
-    tramStop = millis();
+    trainStop();
+    toggleDirection(direction);
+    scheduledStop = millis();
   }
 
   if (readSensor == LOW && moving == 0){
-    if (millis() - tramStop >= embarkTime){
-      analogWrite(PWM, (0.33 * maxSpeed));
-      delay(2000);
-      analogWrite(PWM, (0.66 * maxSpeed));
+    if (millis() - scheduledStop >= embarkTime){
+      trainStart();
     }
   }
 
   if (readSensor == HIGH && moving == 0){ // HIGH when not detecting
-    if (millis() - tramStop >= (embarkTime + 3500)){
-      analogWrite(PWM, maxSpeed);
-      moving = 1;
-      tramStop = 0;
+    if (millis() - scheduledStop >= (embarkTime + 3500)){
+      trainMax();
     }
   }
 }
-  //middleStationOne=0;
-  
-  //if (sensor==HIGH){
-  //  middleStationOne=1;
-  //}
-
-  //if (middleStationOne==1){
-  //  analogWrite(PWM, 010);
-  //  delay(5000);
-  //  analogWrite(PWM, 200);
-  //  middleStationOne=0;
-  //  delay(5000);
-  //}
-
-  //if (middleStationOne==0){
-  //  analogWrite(PWM, 200);
-  //}
-
