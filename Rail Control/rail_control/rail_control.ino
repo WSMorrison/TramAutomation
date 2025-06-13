@@ -11,6 +11,7 @@ int moving;
 int direction = 1;
 int nBEndStop;
 int nBMidStop;
+int trainSpeed;
 // User definable variables
 int maxSpeed = 75;
 int embarkTime = 5500;
@@ -33,8 +34,15 @@ void setup() {
 }
 
 void trainStart(){
-  analogWrite(PWM, (0.50 * maxSpeed));
-  delay(2500);
+  trainSpeed = 010;
+  for (trainSpeed = trainSpeed;
+        trainSpeed <= maxSpeed;
+        trainSpeed++){
+          analogWrite(PWM, trainSpeed);
+          delay(75);
+        }
+  //analogWrite(PWM, (0.50 * maxSpeed));
+  //delay(2500);
   //analogWrite(PWM, (0.75 * maxSpeed));
 }
 
@@ -46,9 +54,16 @@ void trainMax(){
 }
 
 void trainStop(){
-  analogWrite(PWM, (0.50 * maxSpeed));
-  delay(1000);
+  for (trainSpeed = trainSpeed;
+          trainSpeed >= 010;
+          trainSpeed--){
+            analogWrite(PWM, trainSpeed);
+            delay(30);
+          }
   analogWrite(PWM, 010);
+  //analogWrite(PWM, (0.50 * maxSpeed));
+  //delay(1000);
+  //analogWrite(PWM, 010);
 }
 
 void changeDirection(){
