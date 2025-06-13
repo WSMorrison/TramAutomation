@@ -14,6 +14,9 @@ void setup() {
   pinMode(A, OUTPUT);
   pinMode(B, OUTPUT);
   pinMode(Sensor, INPUT);
+  digitalWrite(A, HIGH);
+  digitalWrite(B, LOW);
+  analogWrite(PWM, 010);
 
   pinMode(25, OUTPUT);//Added for Pico, sice it has no onboard POWER LED.
   digitalWrite(25, HIGH);//Using the LED on pin GP25 as a power indicator.
@@ -39,21 +42,6 @@ void trainStop(){
   analogWrite(PWM, 010);
 }
 
-int toggleDirection(int direction){
-  if (direction == 1){
-    digitalWrite(A, LOW);
-    digitalWrite(B, HIGH);
-    direction = 0;
-  } else if (direction == 0){
-    digitalWrite(A, HIGH);
-    digitalWrite(B,LOW);
-    direction = 1;
-  } else {
-    exit(0);
-  }
-  return direction;
-}
-
 void loop() {
 
   int readSensor = digitalRead(Sensor);
@@ -61,7 +49,15 @@ void loop() {
   if (readSensor == LOW && moving == 1){ // LOW when detecting 
     moving = 0;
     trainStop();
-    toggleDirection(direction);
+    if (direction == 1){
+      digitalWrite(A, LOW);
+      digitalWrite(B, HIGH);
+      direction = 0;
+    } else if (direction == 0) {
+      digitalWrite(A, HIGH);
+      digitalWrite(B, LOW);
+      direction = 1;
+    }
     scheduledStop = millis();
   }
 
