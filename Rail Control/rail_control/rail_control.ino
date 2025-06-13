@@ -42,6 +42,18 @@ void trainStop(){
   analogWrite(PWM, 010);
 }
 
+void changeDirection(){
+  if (direction == 1){
+    digitalWrite(A, LOW);
+    digitalWrite(B, HIGH);
+    direction = 0;
+  } else if (direction == 0) {
+    digitalWrite(A, HIGH);
+    digitalWrite(B, LOW);
+    direction = 1;
+  }
+}
+
 void loop() {
 
   int readSensor = digitalRead(Sensor);
@@ -49,15 +61,7 @@ void loop() {
   if (readSensor == LOW && moving == 1){ // LOW when detecting 
     moving = 0;
     trainStop();
-    if (direction == 1){
-      digitalWrite(A, LOW);
-      digitalWrite(B, HIGH);
-      direction = 0;
-    } else if (direction == 0) {
-      digitalWrite(A, HIGH);
-      digitalWrite(B, LOW);
-      direction = 1;
-    }
+    changeDirection();
     scheduledStop = millis();
   }
 
