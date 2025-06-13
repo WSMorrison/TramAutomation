@@ -1,17 +1,28 @@
-//#define pwrLight LED
 #define motorDriverNBA 27 // Digital pins for motor driver direction.
 #define motorDriverNBB 26
-#define PWM 28 // Analog pinout for motor driver speed.
+#define motorDriverSBA 21
+#define motorDriverSBB 20
+#define nbPWM 28 // Analog pinout for motor driver speed.
+#define sbPWM 22
 #define startNBA 0 // Northbound Start A Sensor
 #define endNBA 6 // Northbound End A Sensor
 #define stop1NBA 2 // Northbound Stop 1 A Sensor
-#define stop2NBA 4 // Northbound Stop 2 A Sensor
+#define startSBA 8 // Southbound Start A Sensor
+#define endSBA 10 // Souththbound End A Sensor
+#define stop1SBA 14 // Souththbound Stop 1 A Sensor
 
-int moving;
-int direction = 1;
-int nBEndStop;
-int nBMidStop;
-int trainSpeed;
+int nbMoving;
+int nbDirection = 1;
+int nbEndStop;
+int nbMidStop;
+int nbTrainSpeed;
+
+int sbMoving;
+int sbDirection = 1;
+int sbEndStop;
+int sbMidStop;
+int sbTrainSpeed;
+
 // User definable variables
 int maxSpeed = 75;
 int embarkTime = 5500;
@@ -22,59 +33,101 @@ void setup() {
   pinMode(startNBA, INPUT);
   pinMode(endNBA, INPUT);
   pinMode(stop1NBA, INPUT);
-  pinMode(stop2NBA, INPUT);
+  
+  pinMode(motorDriverSBA, OUTPUT);
+  pinMode(motorDriverSBB, OUTPUT);
+  pinMode(startSBA, INPUT);
+  pinMode(endSBA, INPUT);
+  pinMode(stop1SBA, INPUT);
+
   digitalWrite(motorDriverNBA, HIGH);
   digitalWrite(motorDriverNBB, LOW);
-  analogWrite(PWM, 010);
+  analogWrite(nbPWM, 010);
 
-  //pinMode(pwrLight, OUTPUT);//Added for Pico, sice it has no onboard POWER LED.
-  //digitalWrite(pwrLight, HIGH);//Using the LED on pin GP25 as a power indicator.
+  digitalWrite(motorDriverSBA, HIGH);
+  digitalWrite(motorDriverSBB, LOW);
+  analogWrite(sbPWM, 010);
 
-  delay(200);
+  delay(2000);
 }
 
-void trainStart(){
-  trainSpeed = 010;
-  for (trainSpeed = trainSpeed;
-        trainSpeed <= maxSpeed;
-        trainSpeed++){
-          analogWrite(PWM, trainSpeed);
+// Northbound functions
+void nbTrainStart(){
+  nbTrainSpeed = 010;
+  for (nbTrainSpeed = nbTrainSpeed;
+        nbTrainSpeed <= maxSpeed;
+        nbTrainSpeed++){
+          analogWrite(nbPWM, nbTrainSpeed);
           delay(75);
         }
-  //analogWrite(PWM, (0.50 * maxSpeed));
-  //delay(2500);
-  //analogWrite(PWM, (0.75 * maxSpeed));
 }
 
-void trainMax(){
-  analogWrite(PWM, maxSpeed);
-  moving = 1;
-  nBEndStop = 0;
-  nBMidStop = 0;
+void nbTrainMax(){
+  analogWrite(nbPWM, maxSpeed);
+  nbMoving = 1;
+  nbEndStop = 0;
+  nbMidStop = 0;
 }
 
-void trainStop(){
-  for (trainSpeed = trainSpeed;
-          trainSpeed >= 010;
-          trainSpeed--){
-            analogWrite(PWM, trainSpeed);
+void nbTrainStop(){
+  for (nbTrainSpeed = nbTrainSpeed;
+          nbTrainSpeed >= 010;
+          nbTrainSpeed--){
+            analogWrite(nbPWM, nbTrainSpeed);
             delay(30);
           }
-  analogWrite(PWM, 010);
-  //analogWrite(PWM, (0.50 * maxSpeed));
-  //delay(1000);
-  //analogWrite(PWM, 010);
+  analogWrite(nbPWM, 010);
 }
 
-void changeDirection(){
-  if (direction == 1){
+void nbChangeDirection(){
+  if (nbDirection == 1){
     digitalWrite(motorDriverNBA, LOW);
     digitalWrite(motorDriverNBB, HIGH);
-    direction = 0;
-  } else if (direction == 0) {
+    nbDirection = 0;
+  } else if (nbDirection == 0) {
     digitalWrite(motorDriverNBA, HIGH);
     digitalWrite(motorDriverNBB, LOW);
-    direction = 1;
+    nbDirection = 1;
+  }
+}
+
+// Souththbound functions
+void sbTrainStart(){
+  sbTrainSpeed = 010;
+  for (sbTrainSpeed = sbTrainSpeed;
+        sbTrainSpeed <= maxSpeed;
+        sbTrainSpeed++){
+          analogWrite(sbPWM, sbTrainSpeed);
+          delay(75);
+        }
+}
+
+void sbTrainMax(){
+  analogWrite(sbPWM, maxSpeed);
+  sbMoving = 1;
+  sbEndStop = 0;
+  sbMidStop = 0;
+}
+
+void sbTrainStop(){
+  for (sbTrainSpeed = sbTrainSpeed;
+          sbTrainSpeed >= 010;
+          sbTrainSpeed--){
+            analogWrite(sbPWM, sbTrainSpeed);
+            delay(30);
+          }
+  analogWrite(sbPWM, 010);
+}
+
+void sbChangeDirection(){
+  if (sbDirection == 1){
+    digitalWrite(motorDriverSBA, LOW);
+    digitalWrite(motorDriverSBB, HIGH);
+    sbDirection = 0;
+  } else if (sbDirection == 0) {
+    digitalWrite(motorDriverSBA, HIGH);
+    digitalWrite(motorDriverSBB, LOW);
+    sbDirection = 1;
   }
 }
 
@@ -84,46 +137,92 @@ void loop() {
   int readstartNBA = digitalRead(startNBA);
   int readendNBA = digitalRead(endNBA);
   int readstop1NBA = digitalRead(stop1NBA);
-  int readstop2NBA = digitalRead(stop2NBA);
+  
+  int readstartSBA = digitalRead(startSBA);
+  int readendSBA = digitalRead(endSBA);
+  int readstop1SBA = digitalRead(stop1SBA);
 
+//Northbound
 // End Stop
-  if (((readstartNBA == LOW or readendNBA == LOW) && (readstop1NBA == HIGH && readstop2NBA == HIGH)) && moving == 1){ // LOW when detecting 
-    moving = 0;
-    trainStop();
+  if ((readstartNBA == LOW or readendNBA == LOW) && readstop1NBA == HIGH && nbMoving == 1){ // LOW when detecting 
+    nbMoving = 0;
+    nbTrainStop();
     delay(2000);
-    changeDirection();
-    nBEndStop = millis();
+    nbChangeDirection();
+    nbEndStop = millis();
   }
 
-  if (((readstartNBA == LOW or readendNBA == LOW) && (readstop1NBA == HIGH && readstop2NBA == HIGH)) && moving == 0){
-    if (millis() - nBEndStop >= embarkTime){
-      trainStart();
+  if ((readstartNBA == LOW or readendNBA == LOW) && readstop1NBA == HIGH && nbMoving == 0){
+    if (millis() - nbEndStop >= embarkTime){
+      nbTrainStart();
     }
   }
 
-  if (((readstartNBA == HIGH && readendNBA == HIGH) && (readstop1NBA == HIGH && readstop2NBA == HIGH)) && moving == 0){ // HIGH when not detecting
-    if (millis() - nBEndStop >= (embarkTime + 5500)){
-      trainMax();
+  if ((readstartNBA == HIGH && readendNBA == HIGH) && readstop1NBA == HIGH && nbMoving == 0){ // HIGH when not detecting
+    if (millis() - nbEndStop >= (embarkTime + 5500)){
+      nbTrainMax();
     }
   }
 
 // Mid Stop
-  if ((readstartNBA == HIGH && readendNBA == HIGH) && (readstop1NBA == LOW or readstop2NBA == LOW) && moving == 1){
-    moving = 0;
-    trainStop();
+  if ((readstartNBA == HIGH && readendNBA == HIGH) && readstop1NBA == LOW && nbMoving == 1){
+    nbMoving = 0;
+    nbTrainStop();
     delay(2000);
-    nBMidStop = millis();  
+    nbMidStop = millis();  
   }
 
-  if ((readstartNBA == HIGH && readendNBA == HIGH) && (readstop1NBA == LOW or readstop2NBA == LOW) && moving == 0){
-    if (millis() - nBMidStop >= embarkTime){
-      trainStart();
+  if ((readstartNBA == HIGH && readendNBA == HIGH) && readstop1NBA == LOW && nbMoving == 0){
+    if (millis() - nbMidStop >= embarkTime){
+      nbTrainStart();
     }
   }
 
-  if ((readstartNBA == HIGH && readendNBA == HIGH) && (readstop1NBA == HIGH && readstop2NBA == HIGH) && moving == 0){
-    if (millis() - nBMidStop >= (embarkTime + 5500)){
-      trainMax();
+  if ((readstartNBA == HIGH && readendNBA == HIGH) && readstop1NBA == HIGH && nbMoving == 0){
+    if (millis() - nbMidStop >= (embarkTime + 5500)){
+      nbTrainMax();
+    }
+  }
+
+//Southbound
+// End Stop
+  if ((readstartSBA == LOW or readendSBA == LOW) && readstop1SBA == HIGH && sbMoving == 1){ // LOW when detecting 
+    sbMoving = 0;
+    sbTrainStop();
+    delay(2000);
+    sbChangeDirection();
+    sbEndStop = millis();
+  }
+
+  if ((readstartSBA == LOW or readendSBA == LOW) && readstop1SBA == HIGH && sbMoving == 0){
+    if (millis() - sbEndStop >= embarkTime){
+      sbTrainStart();
+    }
+  }
+
+  if ((readstartSBA == HIGH && readendSBA == HIGH) && readstop1SBA == HIGH && sbMoving == 0){ // HIGH when not detecting
+    if (millis() - sbEndStop >= (embarkTime + 5500)){
+      sbTrainMax();
+    }
+  }
+
+// Mid Stop
+  if ((readstartSBA == HIGH && readendSBA == HIGH) && readstop1SBA == LOW && sbMoving == 1){
+    sbMoving = 0;
+    sbTrainStop();
+    delay(2000);
+    sbMidStop = millis();  
+  }
+
+  if ((readstartSBA == HIGH && readendSBA == HIGH) && readstop1SBA == LOW && sbMoving == 0){
+    if (millis() - sbMidStop >= embarkTime){
+      sbTrainStart();
+    }
+  }
+
+  if ((readstartSBA == HIGH && readendSBA == HIGH) && readstop1SBA == HIGH && sbMoving == 0){
+    if (millis() - sbMidStop >= (embarkTime + 5500)){
+      sbTrainMax();
     }
   }
 
