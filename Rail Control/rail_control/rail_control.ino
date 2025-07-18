@@ -1,211 +1,134 @@
-#define motorDriverNBA 27 // Digital pins for motor driver direction.
+#define motorDriverNBA 27 // Digital pins for Nothbound motor driver direction.
 #define motorDriverNBB 26
-#define motorDriverSBA 21
+#define nbPWM 28 // Analog pinout for Northbound motor driver speed.
+
+#define startNBA 0 // Northbound Start A Sensor.
+#define endNBA 6 // Northbound End A Sensor.
+#define stop1NBA 2 // Northbound Stop 1 A Sensor.
+
+#define motorDriverSBA 21 // Digital pins for Southbound motor driver direction.
 #define motorDriverSBB 20
-#define nbPWM 28 // Analog pinout for motor driver speed.
-#define sbPWM 22
-#define startNBA 0 // Northbound Start A Sensor
-#define endNBA 6 // Northbound End A Sensor
-#define stop1NBA 2 // Northbound Stop 1 A Sensor
-#define startSBA 8 // Southbound Start A Sensor
-#define endSBA 10 // Souththbound End A Sensor
-#define stop1SBA 14 // Souththbound Stop 1 A Sensor
+#define sbPWM 22 // Analog pinout for Southbound motor driver speed.
 
-int nbMoving = 0;
-int nbDirection = 1;
-int nbEndStop;
-int nbMidStop;
+#define startSBA 8 // Southbound Start A Sensor.
+#define endSBA 14// Southbound End A Sensor.
+#define stop1SBA 10 // Southbound Stop 1 A Sensor.
+
+int nbMoving; // Northbound global variables
+int nbDirection;
 int nbTrainSpeed;
-int nbStarting = 0;
+int nbTrainGo;
+int nbTrainStop;
 
-int sbMoving = 0;
-int sbDirection = 1;
-int sbEndStop;
-int sbMidStop;
+int sbMoving; // Southbound global variables
+int sbDirection;
 int sbTrainSpeed;
-int sbStarting = 0;
+int sbTrainGo;
+int sbTrainStop;
 
-// Future iteration user definable variables
-int maxSpeed = 75;
-int embarkTime = 5500;
-
-void nbChangeDirection(){
-  if (nbDirection == 1){
+void nbChangeDirection(){ // Change direction of Northbound train and direction value.
+  if (nbDirection == 0){
     digitalWrite(motorDriverNBA, LOW);
     digitalWrite(motorDriverNBB, HIGH);
-    nbDirection = 0;
-  } else if (nbDirection == 0) {
+    nbDirection = 1;
+  } else if (nbDirection == 1) {
     digitalWrite(motorDriverNBA, HIGH);
     digitalWrite(motorDriverNBB, LOW);
-    nbDirection = 1;
+    nbDirection = 0;
   }
 }
 
-void sbChangeDirection(){
-  if (nbDirection == 1){
+void sbChangeDirection(){ // Change direction of Southbound train and direction value.
+  if (sbDirection == 0){
     digitalWrite(motorDriverSBA, LOW);
     digitalWrite(motorDriverSBB, HIGH);
-    sbDirection = 0;
-  } else if (nbDirection == 0) {
+    sbDirection = 1;
+  } else if (sbDirection == 1) {
     digitalWrite(motorDriverSBA, HIGH);
     digitalWrite(motorDriverSBB, LOW);
-    sbDirection = 1;
+    sbDirection = 0;
   }
-}
-
-void emergencyStop(){
-  analogWrite(nbPWM, 000);
-  analogWrite(sbPWM, 000);
-  // Future iteration turn on an indicator light or something
-  exit(0);
 }
 
 void setup() {
-  pinMode(motorDriverNBA, OUTPUT);
+
+  pinMode(motorDriverNBA, OUTPUT); // Set Northbound rPi pinouts.
   pinMode(motorDriverNBB, OUTPUT);
   pinMode(startNBA, INPUT);
   pinMode(endNBA, INPUT);
   pinMode(stop1NBA, INPUT);
-  
-  pinMode(motorDriverSBA, OUTPUT);
+  digitalWrite(motorDriverNBA, HIGH); // Set Northbound train direction and "speed" to start.
+  digitalWrite(motorDriverNBB, LOW);
+  analogWrite(nbPWM, nbTrainSpeed); 
+
+  pinMode(motorDriverSBA, OUTPUT); // Set Southbound rPi pinouts.
   pinMode(motorDriverSBB, OUTPUT);
   pinMode(startSBA, INPUT);
   pinMode(endSBA, INPUT);
   pinMode(stop1SBA, INPUT);
-
-  digitalWrite(motorDriverNBA, HIGH);
-  digitalWrite(motorDriverNBB, LOW);
-  analogWrite(nbPWM, 010); // Enough voltage to turn on the lights but not drive the train
-
-  digitalWrite(motorDriverSBA, HIGH);
+  digitalWrite(motorDriverSBA, HIGH); // Set Southbound train direction and "speed" to start.
   digitalWrite(motorDriverSBB, LOW);
-  analogWrite(sbPWM, 010); // Enough voltage to turn on the lights but not drive the train
+  analogWrite(sbPWM, sbTrainSpeed); 
 
-  delay(2000); // Two seconds before start
+  nbMoving = 0; // Set start values for Northbound variables.
+  nbDirection = 1;
+  nbTrainSpeed = 10; // Enough voltage to turn on the lights but not drive the train.
+  nbTrainStop = (millis() + 2000); // Two seconds before starting.
 
+  sbMoving = 0; // Set start values for Southbound variables.
+  sbDirection = 1;
+  sbTrainSpeed = 10; // Enough voltage to turn on the lights but not drive the train.
+  sbTrainStop = (millis() + 2000); // Two seconds before starting.
 }
 
 void loop() {
 
-// Reading inputs as part of loop
-  int readstartNBA = digitalRead(startNBA);
-  int readendNBA = digitalRead(endNBA);
-  int readstop1NBA = digitalRead(stop1NBA);
+  int readStartNBA = digitalRead(startNBA); // Read sensor values each loop.
+  int readEndNBA = digitalRead(endNBA);
+  int readStop1NBA = digitalRead(stop1NBA);
+  int readStartSBA = digitalRead(startSBA);
+  int readEndSBA = digitalRead(endSBA);
+  int readStop1SBA = digitalRead(stop1SBA);
   
-  int readstartSBA = digitalRead(startSBA);
-  int readendSBA = digitalRead(endSBA);
-  int readstop1SBA = digitalRead(stop1SBA);
-
-// Handle NB moving train
-  // If in starting 
-  if ((nbStarting == 1) && (nbTrainSpeed < maxSpeed)) { // If train is in starting, increment speed and ignore sensors.
-    //nbTrainSpeed++;
-    nbTrainSpeed = maxSpeed;
-    analogWrite(nbPWM, nbTrainSpeed);
-  } else if ((nbStarting == 1) && (nbTrainSpeed >= maxSpeed)) { // If train is at maximum speed, no incrementing, no longer "starting"
-    nbTrainSpeed = maxSpeed;
-    analogWrite(nbPWM, nbTrainSpeed);
-    nbStarting == 0;
-  // If not in starting, check stop sensors
-  } else if (nbStarting == 0){
-    // If at end stop
-    if ((nbMoving == 1) && ((readstartNBA == LOW or readendNBA == LOW) && readstop1NBA == HIGH)) { // Low when train present, hight when not
-      if (nbTrainSpeed > 10) {
-        //nbTrainSpeed--;
-        nbTrainSpeed = 010;
-        analogWrite(nbPWM, nbTrainSpeed);
-      } else if (nbTrainSpeed <= 10) {
-        nbTrainSpeed = 10;
-        analogWrite(nbPWM, nbTrainSpeed);
-        nbMoving = 0;
-        nbEndStop = millis();
-        nbChangeDirection();
-      } else {
-        emergencyStop();
-      }
-    } 
-    // If at middle stop
-    else if ((nbMoving == 1) && (readstop1NBA == LOW && (readstartNBA == HIGH && readendNBA == HIGH))) {
-      if (nbTrainSpeed > 10) {
-        //nbTrainSpeed--;
-        nbTrainSpeed = 010;
-        analogWrite(nbPWM, nbTrainSpeed);
-      } else if (nbTrainSpeed <= 10) {
-       nbTrainSpeed = 10;
-       analogWrite(nbPWM, nbTrainSpeed);
-        nbMoving = 0;
-        nbMidStop = millis();
-      } else {
-       emergencyStop();
-      }
+  if ((nbMoving == 1) && millis() >= nbTrainGo) { // Handle Northbound moving train at terminals, check time to ignore repeat inputs.
+    if ((readStartNBA == LOW) or (readEndNBA == LOW)) {
+      nbMoving = 0;
+      nbTrainSpeed = 10;
+      analogWrite(nbPWM, nbTrainSpeed);
+      nbChangeDirection();
+      nbTrainStop = (millis() + 4000);
     }
-  }
-
-// Handle SB moving train
-  // If in starting 
-  if ((sbStarting == 1) && (sbTrainSpeed < maxSpeed)) { // If train is in starting, increment speed and ignore sensors.
-    //sbTrainSpeed++;
-    sbTrainSpeed = maxSpeed;
-    analogWrite(sbPWM, sbTrainSpeed);
-  } else if ((sbStarting == 1) && (sbTrainSpeed >= maxSpeed)) { // If train is at maximum speed, no incrementing, no longer "starting"
-    sbTrainSpeed = maxSpeed;
-    analogWrite(sbPWM, sbTrainSpeed);
-    sbStarting == 0;
-  // If not in starting, check stop sensors
-  } else if (sbStarting == 0){
-    // If at end stop
-    if ((sbMoving == 1) && ((readstartSBA == LOW or readendSBA == LOW) && readstop1SBA == HIGH)) { // Low when train present, hight when not
-      if (sbTrainSpeed > 10) {
-        //sbTrainSpeed--;
-        sbTrainSpeed = 010;
-        analogWrite(sbPWM, sbTrainSpeed);
-      } else if (sbTrainSpeed <= 10) {
-        sbTrainSpeed = 10;
-        analogWrite(sbPWM, sbTrainSpeed);
-        sbMoving = 0;
-        sbEndStop = millis();
-        sbChangeDirection();
-      } else {
-        emergencyStop();
-      }
-    } 
-    // If at middle stop
-    else if ((sbMoving == 1) && (readstop1SBA == LOW && (readstartSBA == HIGH && readendSBA == HIGH))) {
-      if (sbTrainSpeed > 10) {
-        //sbTrainSpeed--;
-        sbTrainSpeed = 010;
-        analogWrite(sbPWM, sbTrainSpeed);
-      } else if (sbTrainSpeed <= 10) {
-       sbTrainSpeed = 10;
-       analogWrite(sbPWM, sbTrainSpeed);
-        sbMoving = 0;
-        sbMidStop = millis();
-      } else {
-       emergencyStop();
-      }
+    else if (readStop1NBA == LOW && millis() >= nbTrainGo) { // Handle Northbound moving train at midstops, check time to ignore repeat inputs.
+      nbMoving = 0;
+      nbTrainSpeed = 10;
+      analogWrite(nbPWM, nbTrainSpeed);
+      nbTrainStop = (millis() + 4000);
     }
-  }
-
-// Handle NB stopped train.
-  if ((nbMoving == 0) && (millis() - nbEndStop >= embarkTime)) {
-    nbStarting = 1;
-    nbTrainSpeed = 11;
-    analogWrite(nbPWM, nbTrainSpeed);
-  } else if ((nbMoving == 0) && (millis() - nbMidStop >= embarkTime)) {
-    nbStarting = 1;
-    nbTrainSpeed = 11;
+  } else if ((nbMoving == 0) && (millis() >= nbTrainStop)) { // Handle Northbound stopped train, check time to allow passengers to board.
+    nbMoving = 1;
+    nbTrainGo = (millis() + 3000);
+    nbTrainSpeed = 75;
     analogWrite(nbPWM, nbTrainSpeed);
   }
 
-// Handle /SB stopped train.
-  if ((sbMoving == 0) && (millis() - sbEndStop >= embarkTime)) {
-    sbStarting = 1;
-    sbTrainSpeed = 11;
-    analogWrite(sbPWM, sbTrainSpeed);
-  } else if ((sbMoving == 0) && (millis() - sbMidStop >= embarkTime)) {
-    sbStarting = 1;
-    sbTrainSpeed = 11;
+  if ((sbMoving == 1) && millis() >= sbTrainGo) { // Handle Southbound moving train at terminals, check time to ignore repeat inputs.
+    if ((readStartSBA == LOW) or (readEndSBA == LOW)) {
+      sbMoving = 0;
+      sbTrainSpeed = 10;
+      analogWrite(sbPWM, sbTrainSpeed);
+      sbChangeDirection();
+      sbTrainStop = (millis() + 5000);
+    }
+    else if (readStop1SBA == LOW && millis() >= sbTrainGo) { // Handle Southbound moving train at midstops, check time to ignore repeat inputs.
+      sbMoving = 0;
+      sbTrainSpeed = 010;
+      analogWrite(sbPWM, sbTrainSpeed);
+      sbTrainStop = (millis() + 5000);
+    }
+  } else if ((sbMoving == 0) && (millis() >= sbTrainStop)) { // Handle Southbound stopped train, check time to allow passengers to board.
+    sbMoving = 1;
+    sbTrainGo = (millis() + 3000);
+    sbTrainSpeed = 85;
     analogWrite(sbPWM, sbTrainSpeed);
   }
-
 }
