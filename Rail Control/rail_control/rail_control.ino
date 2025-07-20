@@ -71,14 +71,15 @@ void setup() {
   analogWrite(sbPWM, sbTrainSpeed); 
 
   nbMoving = 0; // Set start values for Northbound variables.
-  nbDirection = 1;
+  nbDirection = 0;
   nbTrainSpeed = 10; // Enough voltage to turn on the lights but not drive the train.
-  nbTrainStop = (millis() + 2000); // Two seconds before starting.
+  nbTrainStop = (millis() + 2000); // Delay before starting.
 
   sbMoving = 0; // Set start values for Southbound variables.
-  sbDirection = 1;
+  sbDirection = 0;
   sbTrainSpeed = 10; // Enough voltage to turn on the lights but not drive the train.
-  sbTrainStop = (millis() + 2000); // Two seconds before starting.
+  delay(5000);
+  //sbTrainStop = (millis() + 2500); // Delay before starting.
 }
 
 void loop() {
