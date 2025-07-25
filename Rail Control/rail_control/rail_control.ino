@@ -14,6 +14,8 @@
 #define endSBA 14// Southbound End A Sensor.
 #define stop1SBA 10 // Southbound Stop 1 A Sensor.
 
+#define loopIndicatorLED 15 // LED that indicates when loop cycles.
+
 int nbMoving; // Northbound global variables
 int nbDirection;
 int nbTrainSpeed;
@@ -70,6 +72,8 @@ void setup() {
   digitalWrite(motorDriverSBB, LOW);
   analogWrite(sbPWM, sbTrainSpeed); 
 
+  pinMode(loopIndicatorLED, OUTPUT);
+
   nbMoving = 0; // Set start values for Northbound variables.
   nbDirection = 0;
   nbTrainSpeed = 10; // Enough voltage to turn on the lights but not drive the train.
@@ -78,7 +82,9 @@ void setup() {
   sbMoving = 0; // Set start values for Southbound variables.
   sbDirection = 0;
   sbTrainSpeed = 10; // Enough voltage to turn on the lights but not drive the train.
+
   delay(5000);
+
   //sbTrainStop = (millis() + 2500); // Delay before starting.
 }
 
@@ -90,6 +96,8 @@ void loop() {
   int readStartSBA = digitalRead(startSBA);
   int readEndSBA = digitalRead(endSBA);
   int readStop1SBA = digitalRead(stop1SBA);
+
+  digitalWrite(loopIndicatorLED, LOW);
   
   if ((nbMoving == 1) && millis() >= nbTrainGo) { // Handle Northbound moving train at terminals, check time to ignore repeat inputs.
     if ((readStartNBA == LOW) or (readEndNBA == LOW)) {
@@ -118,13 +126,13 @@ void loop() {
       sbTrainSpeed = 10;
       analogWrite(sbPWM, sbTrainSpeed);
       sbChangeDirection();
-      sbTrainStop = (millis() + 5000);
+      sbTrainStop = (millis() + 4000);
     }
     else if (readStop1SBA == LOW && millis() >= sbTrainGo) { // Handle Southbound moving train at midstops, check time to ignore repeat inputs.
       sbMoving = 0;
       sbTrainSpeed = 010;
       analogWrite(sbPWM, sbTrainSpeed);
-      sbTrainStop = (millis() + 5000);
+      sbTrainStop = (millis() + 4000);
     }
   } else if ((sbMoving == 0) && (millis() >= sbTrainStop)) { // Handle Southbound stopped train, check time to allow passengers to board.
     sbMoving = 1;
@@ -132,4 +140,6 @@ void loop() {
     sbTrainSpeed = 85;
     analogWrite(sbPWM, sbTrainSpeed);
   }
+
+  digitalWrite(loopIndicatorLED, HIGH);
 }
