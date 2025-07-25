@@ -90,6 +90,8 @@ void setup() {
 
 void loop() {
 
+  digitalWrite(loopIndicatorLED, HIGH); // Turn on loop indicator LED for testing frequency of loop.
+
   int readStartNBA = digitalRead(startNBA); // Read sensor values each loop.
   int readEndNBA = digitalRead(endNBA);
   int readStop1NBA = digitalRead(stop1NBA);
@@ -97,7 +99,7 @@ void loop() {
   int readEndSBA = digitalRead(endSBA);
   int readStop1SBA = digitalRead(stop1SBA);
 
-  digitalWrite(loopIndicatorLED, LOW);
+  digitalWrite(loopIndicatorLED, LOW); // Turns out it's just pretty much constantly on, so no delay I guess?
   
   if ((nbMoving == 1) && millis() >= nbTrainGo) { // Handle Northbound moving train at terminals, check time to ignore repeat inputs.
     if ((readStartNBA == LOW) or (readEndNBA == LOW)) {
@@ -140,6 +142,4 @@ void loop() {
     sbTrainSpeed = 85;
     analogWrite(sbPWM, sbTrainSpeed);
   }
-
-  digitalWrite(loopIndicatorLED, HIGH);
 }
