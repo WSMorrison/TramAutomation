@@ -43,6 +43,8 @@ int nbDirection;
 int nbTrainSpeed;
 int nbTrainGo;
 int nbTrainStop;
+int nbTrainPosition;
+int nbTrainWait;
 
 // Southbound global variables
 int sbMoving; 
@@ -50,6 +52,8 @@ int sbDirection;
 int sbTrainSpeed;
 int sbTrainGo;
 int sbTrainStop;
+int sbTrainPosition;
+int sbTrainWait;
 
 void nbChangeDirection(){ // Change direction of Northbound train and direction value.
   if (nbDirection == 0){
@@ -101,11 +105,15 @@ void setup() {
   nbMoving = 0; // Set start values for Northbound variables.
   nbDirection = 0;
   nbTrainSpeed = 10; // Enough voltage to turn on the lights but not drive the train.
-  nbTrainStop = (millis() + 2000); // Delay before starting.
+  //nbTrainStop = (millis() + 2000); // Delay before starting.
+  nbTrainPosition = 0;
+  nbTrainWait = 0;
 
   sbMoving = 0; // Set start values for Southbound variables.
   sbDirection = 0;
   sbTrainSpeed = 10; // Enough voltage to turn on the lights but not drive the train.
+  sbTrainPosition = 0;
+  nbTrainWait = 0;
 
   delay(5000);
 }
@@ -153,19 +161,25 @@ void loop() {
       nbTrainSpeed = 10;
       analogWrite(nbPWM, nbTrainSpeed);
       nbChangeDirection();
+      nbTrainPosition = 0;
       nbTrainStop = (millis() + 4000);
     }
     else if ((millis() >= nbTrainGo) && ((readNbStop1 == LOW) or (readNbStop2 == LOW) or (readNbStop3 == LOW) or (readNbStop4 == LOW) or (readNbStop5 == LOW))) { // Handle Northbound moving train at midstops, check time to ignore repeat inputs.
       nbMoving = 0;
       nbTrainSpeed = 10;
       analogWrite(nbPWM, nbTrainSpeed);
-      nbTrainStop = (millis() + 4000);
+      nbTrainPosition++;
+      if (nbTrainPosition > sbTrainPosition){
+        nbTrainWait = 2000;
+      }
+      nbTrainStop = (millis() + 4000 + nbTrainWait);
     }
   } else if ((nbMoving == 0) && (millis() >= nbTrainStop)) { // Handle Northbound stopped train, check time to allow passengers to board.
     nbMoving = 1;
-    nbTrainGo = (millis() + 2000);
+    nbTrainGo = (millis() + 3000);
     nbTrainSpeed = 75;
     analogWrite(nbPWM, nbTrainSpeed);
+    nbTrainWait = 0;
   }
 
   if ((sbMoving == 1) && millis() >= sbTrainGo) { // Handle Southbound moving train at terminals, check time to ignore repeat inputs.
@@ -174,19 +188,25 @@ void loop() {
       sbTrainSpeed = 10;
       analogWrite(sbPWM, sbTrainSpeed);
       sbChangeDirection();
+      sbTrainPosition = 0;
       sbTrainStop = (millis() + 4000);
     }
     else if ((millis() >= sbTrainGo) && ((readSbStop1 == LOW) or (readSbStop2 == LOW) or (readSbStop3 == LOW) or (readSbStop4 == LOW) or (readSbStop5 == LOW))) { // Handle Southbound moving train at midstops, check time to ignore repeat inputs.
       sbMoving = 0;
       sbTrainSpeed = 010;
       analogWrite(sbPWM, sbTrainSpeed);
-      sbTrainStop = (millis() + 4000);
+      sbTrainPosition++;
+      if (sbTrainPosition > nbTrainPosition){
+        sbTrainWait = 2000;
+      }
+      sbTrainStop = (millis() + 4000 + sbTrainWait);
     }
   } else if ((sbMoving == 0) && (millis() >= sbTrainStop)) { // Handle Southbound stopped train, check time to allow passengers to board.
     sbMoving = 1;
-    sbTrainGo = (millis() + 2000);
+    sbTrainGo = (millis() + 3000);
     sbTrainSpeed = 85;
     analogWrite(sbPWM, sbTrainSpeed);
+    sbTrainWait = 0;
   }
 
   digitalWrite(emergencyIndicatorLED, HIGH); // Turn on loop indicator LED for testing frequency of loop.
