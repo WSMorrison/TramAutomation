@@ -1,3 +1,9 @@
+// Rail Control
+//
+// Arduino IDE developed control unit for rPi Nano W to control to model trams on two tracks,
+// stopping at up to six stops and two terminals. 
+//
+//
 // NORTHBOUND LINE
 #define nbMotorDriverA 27 // Digital pins for Nothbound motor driver direction.
 #define nbMotorDriverB 26
@@ -111,23 +117,23 @@ void loop() {
   int readNbSouthTerminal = digitalRead(nbSouthTerminal); // Read sensor values each loop.
   int readNbNorthTerminal = digitalRead(nbNorthTerminal);
   int readNbStop1 = digitalRead(nbStop1);
-  //int readNbStop2 = digitalRead(nbStop2);
-  //int readNbStop3 = digitalRead(nbStop3);
-  //int readNbStop4 = digitalRead(nbStop4);
-  //int readNbStop5 = digitalRead(nbStop5);
+  int readNbStop2 = digitalRead(nbStop2);
+  int readNbStop3 = digitalRead(nbStop3);
+  int readNbStop4 = digitalRead(nbStop4);
+  int readNbStop5 = digitalRead(nbStop5);
   //int readNbStop6 = digitalRead(nbStop6);
   int readSbNorthTerminal = digitalRead(sbNorthTerminal);
   int readSbSouthTerminal = digitalRead(sbSouthTerminal);
   int readSbStop1 = digitalRead(sbStop1);
-  //int readSbStop2 = digitalRead(sbStop2);
-  //int readSbStop3 = digitalRead(sbStop3);
-  //int readSbStop4 = digitalRead(sbStop4);
-  //int readSbStop5 = digitalRead(sbStop5);
+  int readSbStop2 = digitalRead(sbStop2);
+  int readSbStop3 = digitalRead(sbStop3);
+  int readSbStop4 = digitalRead(sbStop4);
+  int readSbStop5 = digitalRead(sbStop5);
   //int readSbStop6 = digitalRead(sbStop6);
 
   int readEmergencyStop = digitalRead(emergencyStopSensor);
 
-  if (readEmergencyStop == LOW) { // If emergency stop sensor detects train, stop entire program.
+  if (readEmergencyStop == LOW) {
     nbTrainSpeed = 0;
     sbTrainSpeed = 0;
     analogWrite(nbPWM, nbTrainSpeed);
@@ -149,7 +155,7 @@ void loop() {
       nbChangeDirection();
       nbTrainStop = (millis() + 4000);
     }
-    else if (readNbStop1 == LOW && millis() >= nbTrainGo) { // Handle Northbound moving train at midstops, check time to ignore repeat inputs.
+    else if ((millis() >= nbTrainGo) && ((readNbStop1 == LOW) or (readNbStop2 == LOW) or (readNbStop3 == LOW) or (readNbStop4 == LOW) or (readNbStop5 == LOW))) { // Handle Northbound moving train at midstops, check time to ignore repeat inputs.
       nbMoving = 0;
       nbTrainSpeed = 10;
       analogWrite(nbPWM, nbTrainSpeed);
@@ -157,7 +163,7 @@ void loop() {
     }
   } else if ((nbMoving == 0) && (millis() >= nbTrainStop)) { // Handle Northbound stopped train, check time to allow passengers to board.
     nbMoving = 1;
-    nbTrainGo = (millis() + 3000);
+    nbTrainGo = (millis() + 2000);
     nbTrainSpeed = 75;
     analogWrite(nbPWM, nbTrainSpeed);
   }
@@ -170,7 +176,7 @@ void loop() {
       sbChangeDirection();
       sbTrainStop = (millis() + 4000);
     }
-    else if (readSbStop1 == LOW && millis() >= sbTrainGo) { // Handle Southbound moving train at midstops, check time to ignore repeat inputs.
+    else if ((millis() >= sbTrainGo) && ((readSbStop1 == LOW) or (readSbStop2 == LOW) or (readSbStop3 == LOW) or (readSbStop4 == LOW) or (readSbStop5 == LOW))) { // Handle Southbound moving train at midstops, check time to ignore repeat inputs.
       sbMoving = 0;
       sbTrainSpeed = 010;
       analogWrite(sbPWM, sbTrainSpeed);
@@ -178,7 +184,7 @@ void loop() {
     }
   } else if ((sbMoving == 0) && (millis() >= sbTrainStop)) { // Handle Southbound stopped train, check time to allow passengers to board.
     sbMoving = 1;
-    sbTrainGo = (millis() + 3000);
+    sbTrainGo = (millis() + 2000);
     sbTrainSpeed = 85;
     analogWrite(sbPWM, sbTrainSpeed);
   }
