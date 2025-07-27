@@ -89,6 +89,7 @@ void setup() {
   digitalWrite(sbMotorDriverB, LOW);
   analogWrite(sbPWM, sbTrainSpeed); 
 
+  pinMode(emergencyStopSensor, INPUT);
   pinMode(emergencyIndicatorLED, OUTPUT);
 
   nbMoving = 0; // Set start values for Northbound variables.
@@ -101,8 +102,6 @@ void setup() {
   sbTrainSpeed = 10; // Enough voltage to turn on the lights but not drive the train.
 
   delay(5000);
-
-  //sbTrainStop = (millis() + 2500); // Delay before starting.
 }
 
 void loop() {
@@ -125,6 +124,22 @@ void loop() {
   //int readSbStop4 = digitalRead(sbStop4);
   //int readSbStop5 = digitalRead(sbStop5);
   //int readSbStop6 = digitalRead(sbStop6);
+
+  int readEmergencyStop = digitalRead(emergencyStopSensor);
+
+  if (readEmergencyStop == LOW) { // If emergency stop sensor detects train, stop entire program.
+    nbTrainSpeed = 0;
+    sbTrainSpeed = 0;
+    analogWrite(nbPWM, nbTrainSpeed);
+    analogWrite(sbPWM, sbTrainSpeed);
+    for (int i = 0; i <= 10; i++) {
+        digitalWrite(emergencyIndicatorLED, HIGH);
+        delay(500);
+        digitalWrite(emergencyIndicatorLED, LOW);
+        delay(500);
+      }
+    exit(0);
+  }
   
   if ((nbMoving == 1) && millis() >= nbTrainGo) { // Handle Northbound moving train at terminals, check time to ignore repeat inputs.
     if ((readNbSouthTerminal == LOW) or (readNbNorthTerminal == LOW)) {
@@ -142,7 +157,7 @@ void loop() {
     }
   } else if ((nbMoving == 0) && (millis() >= nbTrainStop)) { // Handle Northbound stopped train, check time to allow passengers to board.
     nbMoving = 1;
-    nbTrainGo = (millis() + 2000);
+    nbTrainGo = (millis() + 3000);
     nbTrainSpeed = 75;
     analogWrite(nbPWM, nbTrainSpeed);
   }
@@ -157,13 +172,13 @@ void loop() {
     }
     else if (readSbStop1 == LOW && millis() >= sbTrainGo) { // Handle Southbound moving train at midstops, check time to ignore repeat inputs.
       sbMoving = 0;
-      sbTrainSpeed = 10;
+      sbTrainSpeed = 010;
       analogWrite(sbPWM, sbTrainSpeed);
       sbTrainStop = (millis() + 4000);
     }
   } else if ((sbMoving == 0) && (millis() >= sbTrainStop)) { // Handle Southbound stopped train, check time to allow passengers to board.
     sbMoving = 1;
-    sbTrainGo = (millis() + 2000);
+    sbTrainGo = (millis() + 3000);
     sbTrainSpeed = 85;
     analogWrite(sbPWM, sbTrainSpeed);
   }
