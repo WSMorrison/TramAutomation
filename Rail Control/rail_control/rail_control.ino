@@ -1,3 +1,5 @@
+//****Add Switch Control****
+
 // Rail Control
 //
 // Arduino IDE developed control unit for rPi Nano W to control to model trams on two tracks,
@@ -16,7 +18,7 @@
 #define nbStop3 3
 #define nbStop4 4
 #define nbStop5 5
-#define nbStop6 6
+#define northTurnoutSwitch 6
 // NORTHBOUND LINE
 
 // SOUTHBOUND LINE
@@ -31,7 +33,7 @@
 #define sbStop3 11
 #define sbStop4 12
 #define sbStop5 13
-#define sbStop6 14
+#define southTurnoutSwitch 14
 // SOUTHBOUND LINE
 
 #define emergencyStopSensor 18 // Emergency Stop sensor circuit, multiple sensors in parallel.
@@ -86,6 +88,11 @@ void setup() {
   pinMode(nbSouthTerminal, INPUT);
   pinMode(nbNorthTerminal, INPUT);
   pinMode(nbStop1, INPUT);
+  pinMode(nbStop2, INPUT);
+  pinMode(nbStop3, INPUT);
+  pinMode(nbStop4, INPUT);
+  pinMode(nbStop5, INPUT);
+  pinMode(northTurnoutSwitch, OUTPUT);
   digitalWrite(nbMotorDriverA, HIGH); // Set Northbound train direction and "speed" to start.
   digitalWrite(nbMotorDriverB, LOW);
   analogWrite(nbPWM, nbTrainSpeed); 
@@ -95,6 +102,11 @@ void setup() {
   pinMode(sbNorthTerminal, INPUT);
   pinMode(sbSouthTerminal, INPUT);
   pinMode(sbStop1, INPUT);
+  pinMode(sbStop2, INPUT);
+  pinMode(sbStop3, INPUT);
+  pinMode(sbStop4, INPUT);
+  pinMode(sbStop5, INPUT);
+  pinMode(southTurnoutSwitch, OUTPUT);
   digitalWrite(sbMotorDriverA, HIGH); // Set Southbound train direction and "speed" to start.
   digitalWrite(sbMotorDriverB, LOW);
   analogWrite(sbPWM, sbTrainSpeed); 
@@ -129,7 +141,7 @@ void loop() {
   int readNbStop3 = digitalRead(nbStop3);
   int readNbStop4 = digitalRead(nbStop4);
   int readNbStop5 = digitalRead(nbStop5);
-  //int readNbStop6 = digitalRead(nbStop6);
+
   int readSbNorthTerminal = digitalRead(sbNorthTerminal);
   int readSbSouthTerminal = digitalRead(sbSouthTerminal);
   int readSbStop1 = digitalRead(sbStop1);
@@ -137,7 +149,6 @@ void loop() {
   int readSbStop3 = digitalRead(sbStop3);
   int readSbStop4 = digitalRead(sbStop4);
   int readSbStop5 = digitalRead(sbStop5);
-  //int readSbStop6 = digitalRead(sbStop6);
 
   int readEmergencyStop = digitalRead(emergencyStopSensor);
 
@@ -162,7 +173,8 @@ void loop() {
       analogWrite(nbPWM, nbTrainSpeed);
       nbChangeDirection();
       nbTrainPosition = 0;
-      nbTrainStop = (millis() + 4000);
+      digitalWrite(northTurnoutSwitch, 1);
+      nbTrainStop = (millis() + 6000);
     }
     else if ((millis() >= nbTrainGo) && ((readNbStop1 == LOW) or (readNbStop2 == LOW) or (readNbStop3 == LOW) or (readNbStop4 == LOW) or (readNbStop5 == LOW))) { // Handle Northbound moving train at midstops, check time to ignore repeat inputs.
       nbMoving = 0;
@@ -172,6 +184,7 @@ void loop() {
       if (nbTrainPosition > sbTrainPosition){
         nbTrainWait = 2000;
       }
+      digitalWrite(northTurnoutSwitch, 0);
       nbTrainStop = (millis() + 4000 + nbTrainWait);
     }
   } else if ((nbMoving == 0) && (millis() >= nbTrainStop)) { // Handle Northbound stopped train, check time to allow passengers to board.
@@ -189,7 +202,8 @@ void loop() {
       analogWrite(sbPWM, sbTrainSpeed);
       sbChangeDirection();
       sbTrainPosition = 0;
-      sbTrainStop = (millis() + 4000);
+      digitalWrite(southTurnoutSwitch, 1);
+      sbTrainStop = (millis() + 6000);
     }
     else if ((millis() >= sbTrainGo) && ((readSbStop1 == LOW) or (readSbStop2 == LOW) or (readSbStop3 == LOW) or (readSbStop4 == LOW) or (readSbStop5 == LOW))) { // Handle Southbound moving train at midstops, check time to ignore repeat inputs.
       sbMoving = 0;
@@ -199,6 +213,7 @@ void loop() {
       if (sbTrainPosition > nbTrainPosition){
         sbTrainWait = 2000;
       }
+      digitalWrite(southTurnoutSwitch, 0);
       sbTrainStop = (millis() + 4000 + sbTrainWait);
     }
   } else if ((sbMoving == 0) && (millis() >= sbTrainStop)) { // Handle Southbound stopped train, check time to allow passengers to board.
